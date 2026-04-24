@@ -1,0 +1,85 @@
+# Node.js with Angular
+# Build a Node.js project that uses Angular.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+    - qua
+    exclude:
+    - releases/old-version
+    - feature*
+  paths:
+    include:
+    - src/*
+    - public/*
+    exclude:
+    - templates/*
+    - variables/*
+
+pool:
+  name: ubuntu-latest
+
+variables:
+- name: env
+  value: dev
+- group: jai-dev
+- group: jai-qua
+
+
+stages:
+- stage: Devintegration
+  displayName: "Dev Build Angular App"
+  variables:
+  - template: variables/dev-variables.yml
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+  - job: Containousintegration
+    steps:
+     - template: templates/dev-integration.yml
+
+- stage: DevDeployment
+  jobs:
+  - deployment: DeployWeb
+    displayName: "Dev Deploy Angular app"
+    pool:
+      vmImage: 'Ubuntu-latest'
+    environment: 
+      name: 'develop'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - template: templates/dev-deployment.yml
+
+##################################################################################################################################
+- stage: Quaintegration
+  dependsOn: DevDeployment
+  displayName: "Qua Build Angular App"
+  variables:
+  - template: variables/qua-variables.yml
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+  - job: Containousintegration
+    steps:
+     - template: templates/qua-integration.yml
+
+
+- stage: QuaDeployment
+  jobs:
+  - deployment: DeployWeb
+    displayName: "Qua Deploy Angular app"
+    pool:
+      vmImage: 'Ubuntu-latest'
+    environment: 
+      name: 'qua'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - template: templates/qua-deployment.yml       
